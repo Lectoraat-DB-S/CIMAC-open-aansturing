@@ -1,0 +1,678 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="CheckStatusVanHetSysteem" Id="{a83cec7a-26ee-4175-ab5a-2ff697203d06}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CheckStatusVanHetSysteem
+VAR
+	//Defenieren van de Xas en functies om deze te manipuleren
+	XasDrive: AXIS_REF;
+	XasDrivePower: MC_Power;
+	DePositieVanDeXas AT %I* : LREAL;
+	StopDeBoot : MC_Stop;
+	VeranderDriveOperationMode : MC_WriteDriveOperationMode;
+
+	
+	//Inputs Vanuit HMI en Variabele voor checken van drive status
+	StatusVanDePower : (Uit, Actief, Error );
+	KnopDriveAan2 AT %I* : BOOL;
+	KnopDriveUit  AT %I* : BOOL;
+	IndicatieDriveIsActief   AT %Q* : BOOL;
+	KnopStopKnop AT %I* : BOOL;	
+	KnopDoorgaan AT %I* : BOOL;	
+	
+	//Variabele voor het bepalen van de state van het systeem
+	StatusVanDeStateVanHetSysteem : (Uit, Joggen, Locatie, Torque);
+	KnopJoggModus AT %I* : BOOL;
+	KnopLocatieModus  AT %I* : BOOL;
+	KnopTorqueControl AT %I* : BOOL;
+	IndicatieStatusIsUit   AT %Q* : BOOL;
+	IndicatieStatusIsJoggen   AT %Q* : BOOL;
+	IndicatieStatusIsLocatie   AT %Q* : BOOL;
+	IndicatieStatusIsTorque   AT %Q* : BOOL;
+	
+	// variabele voor Jogg state
+	XasJoggModusFB : MC_MoveVelocity;
+	HetTypeJog : (LinksTraag, LinksSnel, RechtsSnel, RechtsTraag, StilStaan);
+	KnopJoggModusLinksTraag AT %I* : BOOL;
+	KnopJoggModusLinksSnel AT %I* : BOOL;
+	KnopJoggModusRechtsTraag AT %I* : BOOL;
+	KnopJoggModusRechtsSnel AT %I* : BOOL;
+	
+	// Variabele voor Locatie state
+	XasLocatieModeFB : MC_MoveAbsolute;
+	StatusLocatieStatemachine : (WachtenOpNieuweLocatie, Uitvoeren, Bezig, Klaar,Pauzen);
+ 	DeIngevoerdeTargetPositie AT %I* : LREAL;
+	NogAfTeLeggenAfstand AT %Q* : LREAL;
+	KnopLocatieUitvoeren AT %I* : BOOL;
+	KlaarMetBewegen : BOOL :=FALSE ;
+	
+	//Variabele voor Torque control
+	StatusTorqueStatemachine : (WachtenOpNieuwDoel, Bezig2, Stop);
+	DOTorqueDing : MC_TorqueControl;
+	DeIngevoerdeTorqueDoel AT %I* : LREAL;
+	KnopHervatTorquecontrol AT %I* : BOOL;	
+	
+	// hoopelijk gelinkde I/O
+	InputSensor1 AT %I* : BOOL;
+	OutputSysteemIsActiefDeurslot AT %Q* : BOOL;
+	SlotDicht: BOOL :=FALSE ;
+	SlotOpen: BOOL :=TRUE ;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CheckDrivePower();
+CheckStateVanHetSysteem();	
+	CASE StatusVanDeStateVanHetSysteem OF
+		Uit:
+			IndicatieStatusIsUit:=TRUE;
+			IndicatieStatusIsJoggen:=FALSE;
+			IndicatieStatusIsLocatie:=FALSE;
+			IndicatieStatusIsTorque:=FALSE;
+			OutputSysteemIsActiefDeurslot:=SlotDicht;
+		Joggen:
+			IndicatieStatusIsUit:=FALSE;
+			IndicatieStatusIsJoggen:=TRUE;
+			IndicatieStatusIsLocatie:=FALSE;
+			IndicatieStatusIsTorque:=FALSE;
+			DoJogStatemachine();
+			OutputSysteemIsActiefDeurslot:=SlotOpen;
+		Locatie:
+			NogAfTeLeggenAfstand:= DeIngevoerdeTargetPositie - DePositieVanDeXas;
+			IndicatieStatusIsUit:=FALSE;
+			IndicatieStatusIsJoggen:=FALSE;
+			IndicatieStatusIsLocatie:=TRUE;
+			IndicatieStatusIsTorque:=FALSE;
+			DoLocatieStatemachine();
+			OutputSysteemIsActiefDeurslot:=SlotDicht;		
+		Torque:
+			NogAfTeLeggenAfstand:= DeIngevoerdeTargetPositie - DePositieVanDeXas;
+			IndicatieStatusIsUit:=FALSE;
+			IndicatieStatusIsJoggen:=FALSE;
+			IndicatieStatusIsLocatie:=FALSE;
+			IndicatieStatusIsTorque:=TRUE;
+			DoTorqueStatemachine();
+			OutputSysteemIsActiefDeurslot:=SlotDicht;
+	END_CASE]]></ST>
+    </Implementation>
+    <Action Name="CheckDrivePower" Id="{cbeb062d-b332-4dc4-ab1f-f4bb58083a3a}">
+      <Implementation>
+        <ST><![CDATA[//Power Inputs
+IF KnopDriveAan2 THEN
+	StatusVanDePower:= Actief;
+	IndicatieDriveIsActief:=TRUE;
+	SetPowerHighElkeKant();
+END_IF
+IF NOT IndicatieDriveIsActief THEN
+	StatusVanDePower:=Uit;
+	SetPowerLow();
+END_IF
+
+//evtueel error checken]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="CheckStateVanHetSysteem" Id="{551ec0e0-108b-48b7-8c88-ecc8de7ea2fb}">
+      <Implementation>
+        <ST><![CDATA[
+	VeranderDriveOperationMode
+(	Execute:=FALSE,
+	DriveOperationMode:=DriveOperationMode_Torque,
+	Options:=,
+	Axis:=XasDrive,
+	Done=>,
+	Busy=>,
+	Error=>,
+	ErrorID=>,);
+
+
+IF KnopJoggModus AND NOT KnopLocatieModus AND IndicatieDriveIsActief AND NOT KnopTorqueControl THEN
+	StatusVanDeStateVanHetSysteem:=Joggen;
+	VeranderDriveOperationMode
+(	Execute:=TRUE,
+	DriveOperationMode:=DriveOperationMode_Default,
+	Options:=,
+	Axis:=XasDrive,
+	Done=>,
+	Busy=>,
+	Error=>,
+	ErrorID=>,);
+END_IF
+
+IF NOT KnopJoggModus AND NOT KnopLocatieModus AND IndicatieDriveIsActief AND KnopTorqueControl THEN
+	StatusVanDeStateVanHetSysteem:=Torque;
+	VeranderDriveOperationMode
+(	Execute:=TRUE,
+	DriveOperationMode:=DriveOperationMode_Torque,
+	Options:=,
+	Axis:=XasDrive,
+	Done=>,
+	Busy=>,
+	Error=>,
+	ErrorID=>,);
+
+END_IF
+
+IF NOT KnopJoggModus AND  KnopLocatieModus AND IndicatieDriveIsActief AND NOT KnopTorqueControl THEN
+	StatusVanDeStateVanHetSysteem:=Locatie;
+		
+	VeranderDriveOperationMode
+(	Execute:=TRUE,
+	DriveOperationMode:=DriveOperationMode_Default,
+	Options:=,
+	Axis:=XasDrive,
+	Done=>,
+	Busy=>,
+	Error=>,
+	ErrorID=>,);
+END_IF
+IF NOT IndicatieDriveIsActief OR  NOT KnopJoggModus AND NOT KnopLocatieModus AND NOT KnopTorqueControl THEN
+	StatusVanDeStateVanHetSysteem:=Uit;
+	
+	VeranderDriveOperationMode
+(	Execute:=TRUE,
+	DriveOperationMode:=DriveOperationMode_Default,
+	Options:=,
+	Axis:=XasDrive,
+	Done=>,
+	Busy=>,
+	Error=>,
+	ErrorID=>,);
+END_IF]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="DoJogStatemachine" Id="{43de3663-3354-4f32-94b3-a1e931bf0c43}">
+      <Implementation>
+        <ST><![CDATA[XasJoggModusFB
+	(
+    Axis:= XasDrive,
+	Direction:= 1,
+	Velocity :=0 ,
+	Execute:=FALSE,
+	Deceleration:=0,
+	Acceleration :=0,
+	Jerk:= ,
+	BufferMode:= ,
+	Options := ,
+	InVelocity => ,
+	Active => ,
+	Busy => ,
+	CommandAborted => ,
+	Error => ,
+	ErrorID => ,
+	);
+	
+	IF KnopJoggModusLinksTraag THEN
+		HetTypeJog:=LinksTraag;
+	END_IF
+	IF KnopJoggModusLinksSnel THEN
+		HetTypeJog:=LinksSnel;
+	END_IF
+	IF KnopJoggModusRechtsTraag THEN
+		HetTypeJog:=RechtsTraag;
+	END_IF
+	IF KnopJoggModusRechtsSnel THEN
+		HetTypeJog:=RechtsSnel;
+	END_IF
+	IF NOT KnopJoggModusLinksTraag AND NOT KnopJoggModusLinksSnel AND NOT KnopJoggModusRechtsTraag AND NOT KnopJoggModusRechtsSnel THEN
+		HetTypeJog:=StilStaan;
+	END_IF
+	
+CASE HetTypeJog OF
+	StilStaan:
+XasJoggModusFB
+(
+	Axis:= XasDrive,
+	Direction:= 1,
+	Velocity :=0 ,
+	Execute:=TRUE,
+	Deceleration:=0,
+	Acceleration :=0,
+	Jerk:= ,
+	BufferMode:= ,
+	Options := ,
+	InVelocity => ,
+	Active => ,
+	Busy => ,
+	CommandAborted => ,
+	Error => ,
+	ErrorID => ,
+	);
+		LinksTraag:
+XasJoggModusFB
+(
+    Axis:= XasDrive,
+	Direction:= MC_Positive_Direction ,
+	Velocity :=250 ,
+	Execute:=TRUE,
+	Deceleration:=0,
+	Acceleration :=0,
+	Jerk:= ,
+	BufferMode:= ,
+	Options := ,
+	InVelocity => ,
+	Active => ,
+	Busy => ,
+	CommandAborted => ,
+	Error => ,
+	ErrorID => ,
+	);
+		LinksSnel:
+XasJoggModusFB
+(
+    Axis:= XasDrive,
+	Direction:= MC_Positive_Direction ,
+	Velocity :=500 ,
+	Execute:=TRUE,
+	Deceleration:=0,
+	Acceleration :=0,
+	Jerk:= ,
+	BufferMode:= ,
+	Options := ,
+	InVelocity => ,
+	Active => ,
+	Busy => ,
+	CommandAborted => ,
+	Error => ,
+	ErrorID => ,
+	);
+		RechtsSnel:
+XasJoggModusFB
+(
+    Axis:= XasDrive,
+	Direction:= MC_Negative_Direction,
+	Velocity :=500 ,
+	Execute:=TRUE,
+	Deceleration:=0,
+	Acceleration :=0,
+	Jerk:= ,
+	BufferMode:= ,
+	Options := ,
+	InVelocity => ,
+	Active => ,
+	Busy => ,
+	CommandAborted => ,
+	Error => ,
+	ErrorID => ,
+	);
+	
+	
+	RechtsTraag:
+XasJoggModusFB
+(
+    Axis:= XasDrive,
+	Direction:= MC_Negative_Direction,
+	Velocity :=250,
+	Execute:=TRUE,
+	Deceleration:=0,
+	Acceleration :=0,
+	Jerk:= ,
+	BufferMode:= ,
+	Options := ,
+	InVelocity => ,
+	Active => ,
+	Busy => ,
+	CommandAborted => ,
+	Error => ,
+	ErrorID => ,
+	);
+
+END_CASE]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="DoLocatieStatemachine" Id="{75aa7120-2f71-4f92-bb23-1311f1746a18}">
+      <Implementation>
+        <ST><![CDATA[
+		XasLocatieModeFB
+(   Axis:= XasDrive,
+	Execute:=FALSE,
+	Position := 0,
+	Velocity :=0 ,
+	Deceleration:=0,
+	Acceleration :=0,
+	Jerk:= ,
+	BufferMode:= ,
+	Options := ,
+	Done => KlaarMetBewegen,
+	Active => ,
+	Busy => ,
+	CommandAborted => ,
+	Error => ,
+	ErrorID => , );
+		StopDeBoot
+(	Axis:= XasDrive,
+	Execute:=FALSE,
+	Deceleration:=0,
+	Jerk:=0,
+	Done=>,
+	Busy=>,
+	Active=>,
+	CommandAborted=>,
+	Error=>,
+	ErrorID=>,);
+IF KnopStopKnop THEN
+	StatusLocatieStatemachine := Pauzen;
+END_IF
+
+CASE StatusLocatieStatemachine OF 
+	WachtenOpNieuweLocatie:
+	IF KnopLocatieUitvoeren THEN
+		StatusLocatieStatemachine:= Uitvoeren;
+	END_IF
+	Uitvoeren:
+	XasLocatieModeFB
+(	Axis:= XasDrive,
+	Execute:=TRUE,
+	Position := DeIngevoerdeTargetPositie,
+	Velocity :=500 ,
+	Deceleration:=0,
+	Acceleration :=0,
+	Jerk:= ,
+	BufferMode:= ,
+	Options := ,
+	Done => KlaarMetBewegen,
+	Active => ,
+	Busy => ,
+	CommandAborted => ,
+	Error => ,
+	ErrorID => , );
+	StatusLocatieStatemachine:= Bezig;
+	
+	Bezig:
+	IF KlaarMetBewegen THEN
+		StatusLocatieStatemachine:= Klaar;
+	END_IF
+	Klaar:
+		KlaarMetBewegen:=FALSE;
+		XasLocatieModeFB
+(   Axis:= XasDrive,
+	Execute:=FALSE,
+	Position := DeIngevoerdeTargetPositie,
+	Velocity :=500 ,
+	Deceleration:=0,
+	Acceleration :=0,
+	Jerk:= ,
+	BufferMode:= ,
+	Options := ,
+	Done => KlaarMetBewegen,
+	Active => ,
+	Busy => ,
+	CommandAborted => ,
+	Error => ,
+	ErrorID => , );
+	StatusLocatieStatemachine:= WachtenOpNieuweLocatie;	
+		
+	Pauzen:
+	StopDeBoot
+(	Axis:= XasDrive,
+	Execute:=TRUE,
+	Deceleration:=0,
+	Jerk:=0,
+	Done=>,
+	Busy=>,
+	Active=>,
+	CommandAborted=>,
+	Error=>,
+	ErrorID=>,);
+	IF KnopDoorgaan THEN
+		StatusLocatieStatemachine:= WachtenOpNieuweLocatie;	
+	END_IF
+
+
+END_CASE
+ 
+
+]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="DoTorqueStatemachine" Id="{e6f4eca0-fa40-464f-b2a9-0fbcc4d1e4c5}">
+      <Implementation>
+        <ST><![CDATA[
+		StopDeBoot
+(	Axis:= XasDrive,
+	Execute:=FALSE,
+	Deceleration:=0,
+	Jerk:=0,
+	Done=>,
+	Busy=>,
+	Active=>,
+	CommandAborted=>,
+	Error=>,
+	ErrorID=>,);
+
+IF KnopHervatTorquecontrol THEN
+	StatusTorqueStatemachine:=Bezig2;
+END_IF
+	
+IF KnopStopKnop THEN
+	StatusTorqueStatemachine:=Stop;
+END_IF
+
+CASE StatusTorqueStatemachine OF
+	WachtenOpNieuwDoel:
+		IF KnopHervatTorquecontrol THEN
+				StatusTorqueStatemachine:=Bezig2;
+		END_IF
+	Bezig2:
+	
+	DOTorqueDing(
+	Axis:=XasDrive , 
+	Execute:=TRUE , 
+	ContinuousUpdate:=TRUE , 
+	Relative:=FALSE , 
+	Torque:=DeIngevoerdeTorqueDoel, 
+	TorqueRamp:=0, 
+	VelocityLimitHigh:=1000, 
+	VelocityLimitLow:=-1000, 
+	BufferMode:= , 
+	Options:= , 
+	InTorque=> , 
+	Busy=> , 
+	Active=> , 
+	CommandAborted=> , 
+	Error=> , 
+	ErrorId=> );
+	
+	Stop:
+		StopDeBoot
+		(	Axis:= XasDrive,
+			Execute:=TRUE,
+			Deceleration:=0,
+			Jerk:=0,
+			Done=>,
+			Busy=>,
+			Active=>,
+			CommandAborted=>,
+			Error=>,
+			ErrorID=>,);
+	END_CASE
+
+]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="SetPowerHighElkeKant" Id="{640a068c-1238-4885-b710-0a9a6082115d}">
+      <Implementation>
+        <ST><![CDATA[	XasDrivePower
+	(
+    Axis:= XasDrive,
+    Enable:= TRUE,
+    Enable_Positive:= TRUE,
+    Enable_Negative:= TRUE,
+    Override:= 100,
+    BufferMode:= ,
+    Options:= ,
+    Status=> ,
+    Busy=> ,
+    Active=> ,
+    Error=> ,
+    ErrorID=> 
+	);]]></ST>
+      </Implementation>
+    </Action>
+    <Action Name="SetPowerLow" Id="{9f9dfc77-d53a-416c-a4ad-f810d7ff3421}">
+      <Implementation>
+        <ST><![CDATA[	XasDrivePower
+	(
+    Axis:= XasDrive,
+    Enable:= FALSE,
+    Enable_Positive:= FALSE,
+    Enable_Negative:= FALSE,
+    Override:= 100,
+    BufferMode:= ,
+    Options:= ,
+    Status=> ,
+    Busy=> ,
+    Active=> ,
+    Error=> ,
+    ErrorID=> 
+	);]]></ST>
+      </Implementation>
+    </Action>
+    <LineIds Name="CheckStatusVanHetSysteem">
+      <LineId Id="9" Count="0" />
+      <LineId Id="88" Count="6" />
+      <LineId Id="116" Count="0" />
+      <LineId Id="95" Count="5" />
+      <LineId Id="117" Count="0" />
+      <LineId Id="101" Count="7" />
+      <LineId Id="123" Count="0" />
+      <LineId Id="109" Count="5" />
+      <LineId Id="33" Count="0" />
+      <LineId Id="122" Count="0" />
+    </LineIds>
+    <LineIds Name="CheckStatusVanHetSysteem.CheckDrivePower">
+      <LineId Id="2" Count="2" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="14" Count="1" />
+      <LineId Id="18" Count="0" />
+      <LineId Id="16" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="8" Count="0" />
+    </LineIds>
+    <LineIds Name="CheckStatusVanHetSysteem.CheckStateVanHetSysteem">
+      <LineId Id="86" Count="0" />
+      <LineId Id="45" Count="8" />
+      <LineId Id="43" Count="1" />
+      <LineId Id="1" Count="1" />
+      <LineId Id="20" Count="0" />
+      <LineId Id="22" Count="0" />
+      <LineId Id="25" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="26" Count="0" />
+      <LineId Id="28" Count="3" />
+      <LineId Id="3" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="55" Count="8" />
+      <LineId Id="21" Count="0" />
+      <LineId Id="19" Count="0" />
+      <LineId Id="12" Count="0" />
+      <LineId Id="7" Count="1" />
+      <LineId Id="74" Count="0" />
+      <LineId Id="66" Count="7" />
+      <LineId Id="64" Count="0" />
+      <LineId Id="6" Count="0" />
+      <LineId Id="10" Count="1" />
+      <LineId Id="89" Count="0" />
+      <LineId Id="75" Count="0" />
+      <LineId Id="79" Count="6" />
+      <LineId Id="76" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+    <LineIds Name="CheckStatusVanHetSysteem.DoJogStatemachine">
+      <LineId Id="2" Count="17" />
+      <LineId Id="119" Count="0" />
+      <LineId Id="122" Count="0" />
+      <LineId Id="127" Count="2" />
+      <LineId Id="136" Count="0" />
+      <LineId Id="123" Count="0" />
+      <LineId Id="131" Count="0" />
+      <LineId Id="137" Count="0" />
+      <LineId Id="124" Count="0" />
+      <LineId Id="134" Count="0" />
+      <LineId Id="138" Count="0" />
+      <LineId Id="133" Count="0" />
+      <LineId Id="125" Count="0" />
+      <LineId Id="139" Count="1" />
+      <LineId Id="126" Count="0" />
+      <LineId Id="20" Count="98" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="CheckStatusVanHetSysteem.DoLocatieStatemachine">
+      <LineId Id="180" Count="0" />
+      <LineId Id="124" Count="15" />
+      <LineId Id="163" Count="9" />
+      <LineId Id="162" Count="0" />
+      <LineId Id="122" Count="0" />
+      <LineId Id="160" Count="1" />
+      <LineId Id="123" Count="0" />
+      <LineId Id="43" Count="0" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="93" Count="0" />
+      <LineId Id="104" Count="1" />
+      <LineId Id="45" Count="0" />
+      <LineId Id="91" Count="1" />
+      <LineId Id="76" Count="13" />
+      <LineId Id="94" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="70" Count="0" />
+      <LineId Id="73" Count="0" />
+      <LineId Id="96" Count="1" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="102" Count="0" />
+      <LineId Id="107" Count="14" />
+      <LineId Id="106" Count="0" />
+      <LineId Id="74" Count="0" />
+      <LineId Id="159" Count="0" />
+      <LineId Id="140" Count="2" />
+      <LineId Id="147" Count="0" />
+      <LineId Id="144" Count="1" />
+      <LineId Id="149" Count="0" />
+      <LineId Id="148" Count="0" />
+      <LineId Id="151" Count="0" />
+      <LineId Id="153" Count="0" />
+      <LineId Id="158" Count="0" />
+      <LineId Id="157" Count="0" />
+      <LineId Id="174" Count="0" />
+      <LineId Id="177" Count="0" />
+      <LineId Id="176" Count="0" />
+      <LineId Id="178" Count="1" />
+      <LineId Id="46" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="40" Count="0" />
+      <LineId Id="19" Count="0" />
+    </LineIds>
+    <LineIds Name="CheckStatusVanHetSysteem.DoTorqueStatemachine">
+      <LineId Id="103" Count="0" />
+      <LineId Id="6" Count="10" />
+      <LineId Id="125" Count="0" />
+      <LineId Id="127" Count="1" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="126" Count="0" />
+      <LineId Id="1" Count="0" />
+      <LineId Id="27" Count="0" />
+      <LineId Id="3" Count="0" />
+      <LineId Id="87" Count="0" />
+      <LineId Id="60" Count="1" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="123" Count="1" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="129" Count="0" />
+      <LineId Id="132" Count="15" />
+      <LineId Id="130" Count="1" />
+      <LineId Id="122" Count="0" />
+      <LineId Id="92" Count="9" />
+      <LineId Id="91" Count="0" />
+      <LineId Id="59" Count="0" />
+      <LineId Id="29" Count="1" />
+    </LineIds>
+    <LineIds Name="CheckStatusVanHetSysteem.SetPowerHighElkeKant">
+      <LineId Id="2" Count="13" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+    <LineIds Name="CheckStatusVanHetSysteem.SetPowerLow">
+      <LineId Id="2" Count="13" />
+      <LineId Id="1" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="MAIN" Id="{2e858929-44f3-4765-9260-56aa5ca04b48}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+CheckXas:CheckStatusVanHetSysteem;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CheckXas();]]></ST>
+    </Implementation>
+    <LineIds Name="MAIN">
+      <LineId Id="2" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

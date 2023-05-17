@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Name>Drive Manager 2</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{1cc7c4e9-06c2-42f6-a3b4-b3c45c678923}</ProjectGuid>
+    <TcPath>
+    </TcPath>
+    <AssemblyName>MotorControl programma DM2</AssemblyName>
+    <RootNamespace>MotorControl programma DM2</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="Drive 7 %28AX5106-0000-0214%29.tcdmdrv">
+      <SubType>Content</SubType>
+    </Content>
+  </ItemGroup>
+</Project>
