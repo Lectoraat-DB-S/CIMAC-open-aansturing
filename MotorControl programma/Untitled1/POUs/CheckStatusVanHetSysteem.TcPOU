@@ -9,7 +9,7 @@ VAR
 	DePositieVanDeXas AT %I* : LREAL;
 	StopDeBoot : MC_Stop;
 	VeranderDriveOperationMode : MC_WriteDriveOperationMode;
-
+	OutDeurslot   AT %Q* : BOOL;
 	
 	//Inputs Vanuit HMI en Variabele voor checken van drive status
 	StatusVanDePower : (Uit, Actief, Error );
@@ -60,7 +60,7 @@ END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[CheckDrivePower();
-CheckStateVanHetSysteem();	
+CheckStateVanHetSysteem();
 	CASE StatusVanDeStateVanHetSysteem OF
 		Uit:
 			IndicatieStatusIsUit:=TRUE;
@@ -95,15 +95,33 @@ CheckStateVanHetSysteem();
     </Implementation>
     <Action Name="CheckDrivePower" Id="{cbeb062d-b332-4dc4-ab1f-f4bb58083a3a}">
       <Implementation>
-        <ST><![CDATA[//Power Inputs
+        <ST><![CDATA[	XasDrivePower
+	(
+    Axis:= XasDrive,
+    Enable:= FALSE,
+    Enable_Positive:= TRUE,
+    Enable_Negative:= TRUE,
+    Override:= 100,
+    BufferMode:= ,
+    Options:= ,
+    Status=> ,
+    Busy=> ,
+    Active=> ,
+    Error=> ,
+    ErrorID=> 
+	);
+//Power Inputs
 IF KnopDriveAan2 THEN
 	StatusVanDePower:= Actief;
 	IndicatieDriveIsActief:=TRUE;
 	SetPowerHighElkeKant();
+	OutDeurslot:= TRUE;//Deur open
+	
 END_IF
 IF NOT IndicatieDriveIsActief THEN
 	StatusVanDePower:=Uit;
 	SetPowerLow();
+	OutDeurslot:= FALSE;// Deur gesloten
 END_IF
 
 //evtueel error checken]]></ST>
@@ -538,12 +556,16 @@ CASE StatusTorqueStatemachine OF
       <LineId Id="122" Count="0" />
     </LineIds>
     <LineIds Name="CheckStatusVanHetSysteem.CheckDrivePower">
+      <LineId Id="25" Count="13" />
+      <LineId Id="24" Count="0" />
       <LineId Id="2" Count="2" />
       <LineId Id="13" Count="0" />
       <LineId Id="17" Count="0" />
+      <LineId Id="19" Count="1" />
       <LineId Id="5" Count="0" />
       <LineId Id="14" Count="1" />
       <LineId Id="18" Count="0" />
+      <LineId Id="21" Count="0" />
       <LineId Id="16" Count="0" />
       <LineId Id="12" Count="0" />
       <LineId Id="8" Count="0" />

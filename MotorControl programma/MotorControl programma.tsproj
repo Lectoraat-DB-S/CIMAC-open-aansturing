@@ -1621,7 +1621,7 @@ External Setpoint Generation:
 		</Motion>
 		<Plc>
 			<Project GUID="{F14E25FA-01A4-4988-948E-BF740D2C11A1}" Name="Untitled1" PrjFilePath="Untitled1\Untitled1.plcproj" TmcFilePath="Untitled1\Untitled1.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="Untitled1\Untitled1.tmc" TmcHash="{D8876C60-1793-E7A4-A202-73CCD91C6780}">
+				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="Untitled1\Untitled1.tmc" TmcHash="{8369FE80-73FC-CF4E-7323-6BA454D4665B}">
 					<Name>Untitled1 Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Vars VarGrpType="1">
@@ -1705,6 +1705,10 @@ External Setpoint Generation:
 						<Var>
 							<Name>MAIN.CheckXas.XasDrive.PlcToNc</Name>
 							<Type GUID="{96B75FEB-2D84-43BE-A3EC-D9A681F27D52}" Namespace="MC">PLCTONC_AXIS_REF</Type>
+						</Var>
+						<Var>
+							<Name>MAIN.CheckXas.OutDeurslot</Name>
+							<Type>BOOL</Type>
 						</Var>
 						<Var>
 							<Name>MAIN.CheckXas.IndicatieDriveIsActief</Name>
@@ -3678,7 +3682,7 @@ Bit1: Value smaller than Limit2]]></Comment>
 		</OwnerA>
 		<OwnerA Name="TIPC^Untitled1^Untitled1 Instance">
 			<OwnerB Name="TIID^Device 1 (EtherCAT)^Term 1 (EK1200)^Term 3 (EL2809)">
-				<Link VarA="PlcTask Outputs^MAIN.CheckXas.OutputSysteemIsActiefDeurslot" VarB="Channel 5^Output"/>
+				<Link VarA="PlcTask Outputs^MAIN.CheckXas.OutDeurslot" VarB="Channel 5^Output"/>
 			</OwnerB>
 			<OwnerB Name="TINC^NC-Task 1 SAF^Axes^Axis 1">
 				<Link VarA="PlcTask Inputs^MAIN.CheckXas.DePositieVanDeXas" VarB="Outputs^ToPlc^ActPos"/>
