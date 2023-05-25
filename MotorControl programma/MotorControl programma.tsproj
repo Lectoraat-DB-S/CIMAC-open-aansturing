@@ -1621,7 +1621,7 @@ External Setpoint Generation:
 		</Motion>
 		<Plc>
 			<Project GUID="{F14E25FA-01A4-4988-948E-BF740D2C11A1}" Name="Untitled1" PrjFilePath="Untitled1\Untitled1.plcproj" TmcFilePath="Untitled1\Untitled1.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="Untitled1\Untitled1.tmc" TmcHash="{8369FE80-73FC-CF4E-7323-6BA454D4665B}">
+				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="Untitled1\Untitled1.tmc" TmcHash="{C7CAA56A-9799-B248-62B9-DD374092DF0B}">
 					<Name>Untitled1 Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Vars VarGrpType="1">
@@ -1636,6 +1636,7 @@ External Setpoint Generation:
 						</Var>
 						<Var>
 							<Name>MAIN.CheckXas.KnopDriveAan2</Name>
+							<Comment><![CDATA[Inputs Vanuit HMI en Variabele voor checken van drive status]]></Comment>
 							<Type>BOOL</Type>
 						</Var>
 						<Var>
