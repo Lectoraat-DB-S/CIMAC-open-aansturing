@@ -36,6 +36,26 @@
               <l n="LanguageTexts" t="ArrayList" />
             </o>
             <o>
+              <v n="TextID">"213"</v>
+              <v n="TextDefault">"De Status Van het systeem ="</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"734"</v>
+              <v n="TextDefault">"De Status Van het systeem = %s"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"462"</v>
+              <v n="TextDefault">"De Status Van het systeem =%s"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
+              <v n="TextID">"651"</v>
+              <v n="TextDefault">"De Torque van de as: %2.0f"</v>
+              <l n="LanguageTexts" t="ArrayList" />
+            </o>
+            <o>
               <v n="TextID">"380"</v>
               <v n="TextDefault">"Drive Aan"</v>
               <l n="LanguageTexts" t="ArrayList" />

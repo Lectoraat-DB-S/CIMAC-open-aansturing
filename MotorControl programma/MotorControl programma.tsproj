@@ -1484,7 +1484,10 @@ External Setpoint Generation:
 						<OtherSettings AllowMotionCmdToSlave="true"/>
 					</AxisPara>
 					<Encoder Name="Enc" EncType="8">
-						<EncPara ScaleFactorNumerator="60" ScaleFactorDenominator="1048576" MaxCount="#xffffffff"/>
+						<EncPara ScaleFactorNumerator="60" ScaleFactorDenominator="1048576" MaxCount="#xffffffff">
+							<SoftEndMinControl Enable="true" Range="-5"/>
+							<SoftEndMaxControl Enable="true" Range="3000"/>
+						</EncPara>
 						<Vars VarGrpType="1">
 							<Name>Inputs</Name>
 							<Var>
@@ -1621,7 +1624,7 @@ External Setpoint Generation:
 		</Motion>
 		<Plc>
 			<Project GUID="{F14E25FA-01A4-4988-948E-BF740D2C11A1}" Name="Untitled1" PrjFilePath="Untitled1\Untitled1.plcproj" TmcFilePath="Untitled1\Untitled1.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="Untitled1\Untitled1.tmc" TmcHash="{C7CAA56A-9799-B248-62B9-DD374092DF0B}">
+				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="Untitled1\Untitled1.tmc" TmcHash="{53F1C2B7-193D-2487-BF36-D1D606BC5EF7}">
 					<Name>Untitled1 Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Vars VarGrpType="1">
@@ -1631,8 +1634,16 @@ External Setpoint Generation:
 							<Type GUID="{25521FAA-EA5F-4C7F-8864-BBCCDACD2E98}" Namespace="MC">NCTOPLC_AXIS_REF</Type>
 						</Var>
 						<Var>
+							<Name>MAIN.CheckXas.DeTorqueVanDeXas</Name>
+							<Type>LREAL</Type>
+						</Var>
+						<Var>
 							<Name>MAIN.CheckXas.DePositieVanDeXas</Name>
 							<Type>LREAL</Type>
+						</Var>
+						<Var>
+							<Name>MAIN.CheckXas.KnopSetPositionZero_Home</Name>
+							<Type>BOOL</Type>
 						</Var>
 						<Var>
 							<Name>MAIN.CheckXas.KnopDriveAan2</Name>
@@ -2124,7 +2135,7 @@ Bit1: Value smaller than Limit2]]></Comment>
 							<SortId>0</SortId>
 							<DriveModuleType>31</DriveModuleType>
 							<TcLink>
-								<TcPrjPath>..\MotorControl programma\MotorControl programma\MotorControl programma.tsproj</TcPrjPath>
+								<TcPrjPath>..\MotorControl programma\MotorControl programma.tsproj</TcPrjPath>
 								<IoItemPathName>TIID^Device 4 (EtherCAT)^Drive 7 (AX5106-0000-0214)</IoItemPathName>
 								<ItemId>7</ItemId>
 								<ObjectId>#x03020007</ObjectId>
@@ -2136,7 +2147,6 @@ Bit1: Value smaller than Limit2]]></Comment>
 							<HardwareVersion>c:0100  p:0103  d:0102  f:0101  o:----  s:----</HardwareVersion>
 							<SerialNr>Serial#: 000553725</SerialNr>
 							<ProductRevision>AX5106-0000-0214</ProductRevision>
-							<HasDualUseInfo>true</HasDualUseInfo>
 							<WatchLog UpdateIntervalInMs="500">
 								<WatchLogItem>
 									<WatchLogParaSoE Index="33092"/>
@@ -2192,7 +2202,7 @@ Bit1: Value smaller than Limit2]]></Comment>
 									</Parameter>
 									<Parameter>
 										<PropertyName>MaxDcLinkVoltage</PropertyName>
-										<Value>890</Value>
+										<Value>875</Value>
 									</Parameter>
 									<Parameter>
 										<PropertyName>UmainsPhaseErrDetection</PropertyName>
@@ -2222,7 +2232,7 @@ Bit1: Value smaller than Limit2]]></Comment>
 								</Device>
 								<Channel ChnId="0">
 									<TcLink>
-										<TcPrjPath>..\MotorControl programma\MotorControl programma\MotorControl programma.tsproj</TcPrjPath>
+										<TcPrjPath>..\MotorControl programma\MotorControl programma.tsproj</TcPrjPath>
 										<IoItemPathName>TIID^Device 4 (EtherCAT)^Drive 7 (AX5106-0000-0214)</IoItemPathName>
 										<NcItemPathName>TINC^NC-Task 1 SAF^Axes^Axis 1</NcItemPathName>
 									</TcLink>
@@ -3107,10 +3117,6 @@ Bit1: Value smaller than Limit2]]></Comment>
 											<WatchLogParaSoE Index="51"/>
 											<Alias>Motor ratation angle</Alias>
 										</WatchLogItem>
-										<WatchLogItem>
-											<WatchLogParaSoE Index="32861"/>
-											<Alias>Configured channel current</Alias>
-										</WatchLogItem>
 									</WatchLog>
 								</Channel>
 							</Inverter>
@@ -3602,6 +3608,8 @@ Bit1: Value smaller than Limit2]]></Comment>
 						<MBoxUserCmdData>020005000a0000001d000000000000000000000000000000000000000000000003403d800000000007004d6f746f722074656d70657261747572652073656e736f72207479706500</MBoxUserCmdData>
 						<MBoxUserCmdData>004005000a0000001e0000000000000000000000000000000000000000000000034030810000000001005265706f727420646961676e6f737469637320696e666f726d6174696f6e00</MBoxUserCmdData>
 						<MBoxUserCmdData>020005000a0000001400000000000000000000000000000000000000000000000340fa8000000000010050726f626520312076616c756520736f7572636500</MBoxUserCmdData>
+						<MBoxUserCmdData>020005002200000014000000000000000000000000000000000000000000000003408b8200000000160016000000000000000100680168013c001e000000000064004175746f74756e696e6720706172616d6574657200</MBoxUserCmdData>
+						<MBoxUserCmdData>020005000a00000017000000000000000000000000000000000000000000000003406800000000006400506f736974696f6e206c6f6f70204b762d666163746f7200</MBoxUserCmdData>
 						<Pdo Name="AT" Index="#x0010" Flags="#x0001" SyncMan="3">
 							<Entry Name="Drive status word" BitLen="16" Index="#x0087" Flags="#x00000800">
 								<Type>UINT</Type>
@@ -3687,6 +3695,7 @@ Bit1: Value smaller than Limit2]]></Comment>
 			</OwnerB>
 			<OwnerB Name="TINC^NC-Task 1 SAF^Axes^Axis 1">
 				<Link VarA="PlcTask Inputs^MAIN.CheckXas.DePositieVanDeXas" VarB="Outputs^ToPlc^ActPos"/>
+				<Link VarA="PlcTask Inputs^MAIN.CheckXas.DeTorqueVanDeXas" VarB="Outputs^ToPlc^ActTorque"/>
 				<Link VarA="PlcTask Inputs^MAIN.CheckXas.InputSensor1" VarB="Drive^Outputs^Out^nCtrl2"/>
 				<Link VarA="PlcTask Inputs^MAIN.CheckXas.XasDrive.NcToPlc" VarB="Outputs^ToPlc"/>
 				<Link VarA="PlcTask Outputs^MAIN.CheckXas.XasDrive.PlcToNc" VarB="Inputs^FromPlc"/>
