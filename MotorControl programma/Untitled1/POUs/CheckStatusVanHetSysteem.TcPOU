@@ -64,6 +64,7 @@ END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[CheckStateVanHetSysteem();
+
 	CASE StatusVanDeStateVanHetSysteem OF
 		SysteemStatusMogelijkheiden.PowerOff:
 			SetPowerLow();
@@ -491,7 +492,9 @@ END_CASE
       </Implementation>
     </Action>
     <LineIds Name="CheckStatusVanHetSysteem">
-      <LineId Id="88" Count="1" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="337" Count="0" />
+      <LineId Id="89" Count="0" />
       <LineId Id="180" Count="0" />
       <LineId Id="182" Count="0" />
       <LineId Id="191" Count="0" />
